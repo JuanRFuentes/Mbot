@@ -1,1 +1,1 @@
-non install
+npm install
