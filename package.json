@@ -1,0 +1,12 @@
+{
+  "name": " Mbot",
+  "version": "0.0.1",
+  "description": "meserobot",
+  "main": "Mbot.js",
+  "scripts": {
+  "start": "Mbot.js"
+  },
+  "dependencies": {
+    "@adiwajshing/baileys": "^4.0.1"
+  }
+}
