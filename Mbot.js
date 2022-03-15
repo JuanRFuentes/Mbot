@@ -1,26 +1,30 @@
-const { WAConnection } = require('@adiwajshing/baileys');
-const fs = require('fs');
+import makeWASocket, { DisconnectReason } from '@adiwajshing/baileys'
+import { Boom } from '@hapi/boom'
 
-async function iniciar () { 
-        const client = new WAConnection()
-
-        client.logger.level = 'warn'
-
-        client.on('qr', () => {
-        })
-
-        fs.existsSync('./MBot.json') && client.loadAuthInfo('./Samu330.json')
-
-        client.on('connecting', () => {
-        console.log('Conectando')
-        })
-
-        client.on('open', () => {
-        console.log('Conectado exitosamente :D')
-        })
-        await client.connect({timeoutMs: 30*1000})
-        fs.writeFileSync('./MBot.json', JSON.stringify(client.base64EncodedAuthInfo(), null, '\t'))
+async function connectToWhatsApp () {
+    const sock = makeWASocket({
+        // can provide additional config here
+        printQRInTerminal: true
+    })
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect } = update
+        if(connection === 'close') {
+            const shouldReconnect = (lastDisconnect.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut
+            console.log('connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect)
+            // reconnect if not logged out
+            if(shouldReconnect) {
+                connectToWhatsApp()
+            }
+        } else if(connection === 'open') {
+            console.log('opened connection')
         }
+    })
+    sock.ev.on('messages.upsert', m => {
+        console.log(JSON.stringify(m, undefined, 2))
 
-iniciar ()
-.catch (err => console.log("unexpected error: " + err))
+        console.log('replying to', m.messages[0].key.remoteJid)
+        await sock.sendMessage(m.messages[0].key.remoteJid!, { text: 'Hello there!' })
+    })
+}
+// run in main file
+connectToWhatsApp()
